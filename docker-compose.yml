@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. Banco de Dados PostgreSQL (Armazena os dados unificados do MergeStat)
+  db:
+    image: postgres:14-alpine
+    container_name: lab-devsecops-db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mergestat
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mergestat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. MergeStat UI e Worker (Executa as varreduras de OSV, Grype e Gitleaks e insere no PostgreSQL)
+  mergestat:
+    image: ghcr.io/mergestat/mergestat:latest
+    container_name: lab-devsecops-mergestat
+    restart: always
+    ports:
+      - "3300:3300"
+    environment:
+      - POSTGRES_CONNECTION=postgres://postgres:postgres@db:5432/mergestat?sslmode=disable
+      - JWT_SECRET=super-secret-jwt-key-for-academic-lab-2026
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Grafana (Plataforma de visualização de painéis/dashboards)
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: lab-devsecops-grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
+    driver: local

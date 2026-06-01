@@ -1,81 +1,99 @@
-# Laboratório Acadêmico de Segurança Ofensiva (SAST, SCA & Secrets)
+# Laboratório Acadêmico de Segurança Ofensiva & DevSecOps (Multi-Language)
 
-Este repositório foi **intencionalmente projetado** para ser vulnerável. Ele serve como um alvo de testes acadêmicos para avaliar a eficácia de ferramentas de análise estática de segurança e detecção de segredos.
+Este repositório foi **intencionalmente projetado** para ser vulnerável. Ele serve como um alvo de testes acadêmicos multilíngue para avaliar a eficácia de ferramentas de análise estática de segurança, gerenciamento de dependências e detecção de segredos.
 
 > [!WARNING]
 > **ATENÇÃO:** Este código contém vulnerabilidades reais de alto impacto, chaves privadas hardcoded e configurações inseguras. **NUNCA publique ou implante este código em ambientes de produção.**
 
 ---
 
-## 🛠️ Mapa de Vulnerabilidades do Laboratório
+## 🛠️ Estrutura e Mapa de Vulnerabilidades do Laboratório
 
-### 1. Dependências Inseguras (SCA) - Alvo para `OSV-Scanner` / `npm audit`
-Arquivo: [package.json](package.json)
-* **`lodash@4.17.15`**: Contém falhas graves de *Prototype Pollution* (CVE-2020-8203, CVE-2020-28500), que podem levar a negação de serviço ou execução remota de código (RCE).
-* **`express@4.16.0`**: Versão desatualizada com múltiplas vulnerabilidades conhecidas (Open Redirect, Denial of Service).
-* **`jsonwebtoken@8.5.1`**: Vulnerável a desvios de assinatura de chave pública e falsificação de tokens JWT (CVE-2022-23529).
-* **`axios@0.19.0`**: Vulnerabilidade de Server-Side Request Forgery (SSRF) no tratamento de requisições externas (CVE-2020-28168).
+O repositório está organizado em três subdiretórios representando diferentes ecossistemas de desenvolvimento para testar o comportamento das ferramentas em múltiplos ambientes:
 
-### 2. Infraestrutura em Containers Insegura - Alvo para `Grype` / `Trivy`
-Arquivo: [Dockerfile](Dockerfile)
-* Utiliza a imagem base **`node:10.16.0-alpine`**.
-* Esta imagem utiliza uma versão extremamente antiga do Alpine Linux que contém centenas de vulnerabilidades conhecidas de sistema operacional (em pacotes como `openssl`, `musl`, `busybox`, `zlib`), sendo o alvo perfeito para testar scanners de segurança de imagens Docker.
+### 🟢 1. Módulo Node.js (`app-node/`)
+* **Dependências Inseguras (SCA - [app-node/package.json](app-node/package.json)):**
+  * **`lodash@4.17.15`**: Falha grave de *Prototype Pollution* (CVE-2020-8203, CVE-2020-28500).
+  * **`express@4.16.0`**: Versão antiga vulnerável a Open Redirect e Denial of Service.
+  * **`jsonwebtoken@8.5.1`**: Vulnerável a desvios de assinatura e falsificação de tokens JWT (CVE-2022-23529).
+  * **`axios@0.19.0`**: Vulnerável a Server-Side Request Forgery (SSRF) (CVE-2020-28168).
+* **Infraestrutura em Containers (Grype - [app-node/Dockerfile](app-node/Dockerfile)):**
+  * Baseado em **`node:10.16.0-alpine`** contendo pacotes legados vulneráveis de SO (`openssl`, `musl`, `busybox`, `zlib`).
+* **Vazamento de Segredos (Gitleaks - [app-node/config.js](app-node/config.js) / [app-node/.env](app-node/.env)):**
+  * AWS Access Key ID no formato padrão (`AKIA...`), GitHub PAT fictício (`ghp_...`) e string de conexão do MongoDB exposta em texto claro.
 
-### 3. Vazamento de Credenciais e Segredos - Alvo para `Gitleaks` / `TruffleHog`
-Arquivos: [config.js](config.js) e [.env](.env)
-Este repositório expõe segredos fictícios projetados para corresponder às assinaturas de detecção padrão:
-* **AWS Access Key ID**: Identificadores no padrão `AKIA...` (16 a 20 caracteres alfanuméricos em maiúsculo).
-* **AWS Secret Access Key**: Padrão de string de 40 caracteres associada.
-* **GitHub Personal Access Token (PAT)**: Token simulado no formato moderno `ghp_...` (36 caracteres alfanuméricos).
-* **Strings de Conexão com Banco de Dados**: Credenciais expostas em formato de texto claro na URI do MongoDB (`config.js`) e PostgreSQL (`.env`).
+### 🟡 2. Módulo Python (`app-python/`)
+* **Dependências Inseguras (SCA - [app-python/requirements.txt](app-python/requirements.txt)):**
+  * **`Flask==0.12`**: Versão antiga com falhas conhecidas de negação de serviço.
+  * **`requests==2.20.0`**: Vulnerável a vazamento de credenciais em redirects (CVE-2018-18074).
+  * **`Jinja2==2.10`**: Vulnerabilidade de Sandbox Escape (CVE-2019-10906).
+  * **`cryptography==2.3`**: Vulnerável a falhas de estouro de pilha e corrupção de memória.
+* **Infraestrutura em Containers (Grype - [app-python/Dockerfile](app-python/Dockerfile)):**
+  * Baseado em **`python:3.6-slim`** com dezenas de vulnerabilidades do Debian Stretch (Glibc, OpenSSL).
+* **Vazamento de Segredos (Gitleaks - [app-python/config.py](app-python/config.py) / [app-python/.env](app-python/.env)):**
+  * Chave AWS fictícia, Token de Webhook do Slack (`hooks.slack.com`) e credenciais expostas do PostgreSQL.
 
-### 4. Vulnerabilidades de Código-Fonte (SAST) - Alvo para `Semgrep` / `SonarQube`
-Arquivo: [app.js](app.js)
-* **Command Injection (Injeção de Comando)**: Uso inseguro da função `exec()` do Node.js na rota `/ping`, permitindo que caracteres especiais do shell (como `;`, `&&`, `|`) executem comandos arbitrários no servidor.
-* **Eval Injection (Injeção de Código)**: Rota `/calculate` que utiliza o método perigoso `eval()` do JavaScript para executar dinamicamente strings enviadas pelo usuário.
-* **SSRF (Server-Side Request Forgery)**: Rota `/fetch-url` que faz requisições usando `axios` diretamente a URLs fornecidas via query parameters, abrindo portas para port-scanning interno na rede privada do servidor.
-* **Desativação Global do TLS**: Configuração global `process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'` que desabilita a validação de certificados digitais HTTPS da aplicação, facilitando ataques de Man-in-the-Middle (MitM).
-* **JWT Vulnerável**: Assinatura e verificação de tokens JWT utilizando chaves fracas hardcoded (`secret123`), permitindo brute-force offline simplificado de chaves de assinatura.
+### 🔵 3. Módulo Go (`app-go/`)
+* **Dependências Inseguras (SCA - [app-go/go.mod](app-go/go.mod)):**
+  * **`github.com/gin-gonic/gin v1.6.0`**: Vulnerável a validações incorretas e problemas de CORS (CVE-2020-28483).
+  * **`golang.org/x/crypto` v0.0.0-20200622**: Falhas conhecidas no tratamento de cifragem (CVE-2021-43565).
+* **Infraestrutura em Containers (Grype - [app-go/Dockerfile](app-go/Dockerfile)):**
+  * Baseado na imagem **`golang:1.15-alpine`** com componentes do Alpine antigo e vulnerabilidades de compilação.
+* **Vazamento de Segredos (Gitleaks - [app-go/config.go](app-go/config.go)):**
+  * Chaves AWS fictícias e string de conexão Postgres em texto claro de produção.
 
 ---
 
 ## 🚀 Como Executar os Scanners de Segurança
 
-Aqui estão os comandos para validar este laboratório usando ferramentas populares de código aberto:
-
 ### A. Detectando Segredos com o `Gitleaks`
-Para varrer todo o histórico Git do repositório procurando por chaves vazadas:
+O Gitleaks varre o repositório por completo e detecta chaves em todas as linguagens e no histórico Git:
 ```bash
-# Rodar varredura local detectando chaves ativas ou no histórico de commits
+# Rodar na raiz do repositorio
 gitleaks detect --source=. --verbose
 ```
 
-### B. Analisando Dependências com o `OSV-Scanner`
-Desenvolvido pelo Google, o OSV-Scanner verifica vulnerabilidades conhecidas em dependências:
+### B. Analisando Dependências Multilíngue com o `OSV-Scanner`
+O OSV-Scanner detectará automaticamente todas as dependências vulneráveis nas três pastas:
 ```bash
-# Executar na raiz do projeto contendo o package.json
-osv-scanner --lockfile=package-lock.json # (ou apenas rodar osv-scanner ./)
+# Executar a varredura recursiva na raiz do repositorio
+osv-scanner --recursive ./
 ```
-*Dica:* Alternativamente, você pode rodar um simples `npm audit`.
+*(Nota: Você também pode rodar auditorias nativas nas pastas individuais como `npm audit` em `app-node/` ou `pip audit` em `app-python/`).*
 
 ### C. Varrendo Imagens de Container com o `Grype`
-Para varrer a imagem Docker e detectar pacotes de SO desatualizados:
-```bash
-# 1. Construa a imagem localmente
-docker build -t lab-seguranca-ofensiva:latest .
+Para varrer e comparar as vulnerabilidades de sistema operacional entre os três módulos:
 
-# 2. Execute a varredura da imagem usando o Grype
-grype lab-seguranca-ofensiva:latest
-```
-
-### D. Análise Estática de Código (SAST) com o `Semgrep`
-O Semgrep é uma excelente ferramenta SAST rápida e extensível:
 ```bash
-# Rodar regras padrões de segurança de JavaScript/Node.js do Semgrep
-semgrep --config auto
+# 1. Construa as imagens locais
+docker build -t lab-node:latest ./app-node
+docker build -t lab-python:latest ./app-python
+docker build -t lab-go:latest ./app-go
+
+# 2. Varra cada uma das imagens usando o Grype
+grype lab-node:latest
+grype lab-python:latest
+grype lab-go:latest
 ```
 
 ---
 
+## 📊 Ambiente Integrado DevSecOps (MergeStat + PostgreSQL + Grafana)
+
+Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui o arquivo [docker-compose.yml](docker-compose.yml) pronto que inicializa o stack completo de coleta e visualização:
+
+1. **Subir o stack:**
+   ```bash
+   docker-compose up -d
+   ```
+2. **Configurar no MergeStat (`http://localhost:3300`):**
+   * Vá em **Repos** e registre o link deste repositório Git.
+   * Vá em **Repo Syncs** -> **Add Sync** e ative as imagens de sincronização oficiais do `OSV-Scanner`, `Grype` e `Gitleaks`. Elas varrerão todas as três subpastas automaticamente!
+3. **Análise no Grafana (`http://localhost:3000`):**
+   * Usuário/Senha: `admin` / `admin`.
+   * Conecte o PostgreSQL do MergeStat como Data Source para montar os dashboards analíticos de vulnerabilidades consolidados de Node, Python e Go.
+
+---
+
 ## 🎓 Uso Acadêmico
-Este repositório foi construído especificamente para fins pedagógicos. sinta-se à vontade para clonar, executar scanners locais, construir pipelines de CI/CD (GitHub Actions) com estes testes integrados e analisar os relatórios gerados por cada ferramenta para entender como a detecção de vulnerabilidades funciona em profundidade.
+Este repositório foi construído especificamente para fins pedagógicos. sinta-se à vontade para clonar, executar os testes em diferentes ecossistemas de desenvolvimento e analisar como as ferramentas open-source lidam com a detecção de CVEs e credenciais vazadas em múltiplas tecnologias.
