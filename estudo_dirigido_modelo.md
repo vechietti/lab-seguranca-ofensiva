@@ -48,11 +48,22 @@ git clone https://github.com/vechietti/lab-seguranca-ofensiva.git
 cd lab-seguranca-ofensiva
 ```
 
-### Passo 3: Inicializar a Infraestrutura com Docker Compose
-Na pasta raiz do repositório clonado, suba os serviços do banco Postgres, MergeStat e Grafana:
-```bash
-docker-compose up -d
-```
+### Passo 3: Inicializar a Infraestrutura
+Você pode escolher uma das duas formas de inicialização:
+
+* **Opção A: Implantação Completa e Unificada (Recomendado):**
+  Na pasta raiz do repositório clonado, suba os serviços do banco Postgres, MergeStat e Grafana já interligados na mesma rede Docker:
+  ```bash
+  docker-compose up -d
+  ```
+
+* **Opção B: Implantação Oficial do MergeStat via Script:**
+  Dê permissão de execução e rode o script `setup-mergestat.sh` para clonar o repositório oficial e subir o docker-compose original de lá de forma isolada:
+  ```bash
+  chmod +x setup-mergestat.sh
+  ./setup-mergestat.sh
+  ```
+
 *Verifique se todos os contêineres estão rodando corretamente:*
 ```bash
 docker ps

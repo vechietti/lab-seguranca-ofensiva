@@ -80,12 +80,23 @@ grype lab-go:latest
 
 ## 📊 Ambiente Integrado DevSecOps (MergeStat + PostgreSQL + Grafana)
 
-Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui o arquivo [docker-compose.yml](docker-compose.yml) pronto que inicializa o stack completo de coleta e visualização.
+Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui duas opções de implantação do ambiente:
 
-### 1. Subir o stack (dentro da VM Ubuntu):
-No terminal da sua máquina virtual Ubuntu, clone o repositório, navegue até a pasta e execute:
+### Opção A: Stack Unificado e Completo (Recomendado)
+Esta opção inicializa o **PostgreSQL, o MergeStat e o Grafana** já interligados na mesma rede Docker.
+Na pasta raiz do repositório clonado na VM Ubuntu, execute:
 ```bash
 docker-compose up -d
+```
+
+### Opção B: Implantação Oficial do MergeStat via Script
+Se você deseja clonar e rodar o repositório oficial do MergeStat de forma isolada, utilize o script de automação **`setup-mergestat.sh`** fornecido na raiz deste repositório:
+```bash
+# 1. Dê permissão de execução ao script
+chmod +x setup-mergestat.sh
+
+# 2. Execute o script para clonar o repositório oficial e subir o docker-compose
+./setup-mergestat.sh
 ```
 
 > [!IMPORTANT]
