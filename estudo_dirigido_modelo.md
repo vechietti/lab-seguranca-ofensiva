@@ -96,6 +96,11 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
    * **Password:** `postgres`
    * **SSL Mode:** `disable`
 5. Role a página e clique no botão **Save & Test**. Você deve ver uma mensagem verde confirmando que o banco de dados está conectado.
+6. **Importar o Dashboard do Laboratório:**
+   * Para visualizar o painel do scanner igual ao modelo oficial do blog da Grafana, baixe o arquivo de configuração oficial [neste link (GitHub oficial do MergeStat)](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilities/trivy/grafana/trivy.json) ou acesse a versão do OSV-Scanner no repositório.
+   * No menu do Grafana, clique no ícone **Dashboards** -> **New** -> **Import**.
+   * Faça o upload do arquivo `.json` baixado ou cole o conteúdo do JSON, selecione o Data Source do PostgreSQL (`mergestat`) que você acabou de conectar e clique em **Import**.
+   * Você verá o dashboard completo renderizado com gráficos de pizza por severidade e tabelas alimentadas pelos dados coletados de Node, Python e Go!
 
 ---
 
