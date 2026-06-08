@@ -33,22 +33,23 @@ Adotando a abordagem *shift-left* de segurança na cadeia de suprimentos de soft
 * **Riscos Avaliados e Impactos:** Comprometimento da aplicação por execução de dependência vulnerável (ex: Prototype Pollution no Lodash em Node.js ou Sandbox Escape no Jinja2 em Python), escalada de privilégios via imagem DockerAlpine/Debian legada e comprometimento de contas AWS/GitHub por tokens vazados.
 
 ## 5. Requisitos do Ambiente
-* Docker e Docker Compose instalados na máquina local.
+* Docker e Docker Compose instalados (caso execute em VM Ubuntu no VirtualBox, garanta que o Docker daemon esteja ativo).
+* Redirecionamento de portas configurado no VirtualBox para as portas `3300` (MergeStat) e `3000` (Grafana), ou acesso via IP de rede da VM.
 * Conta ativa no GitHub para gerenciamento do repositório alvo.
 * Acesso à internet para download de imagens e sincronização.
 
 ## 6. Instalação e Configuração
 A configuração do laboratório está estruturada em duas partes:
-1. **Preparação do Alvo:** Criação do repositório no GitHub com dependências antigas (`app-node/package.json`, `app-python/requirements.txt`, `app-go/go.mod`), Dockerfiles vulneráveis e commits simulados com chaves no histórico Git.
+1. **Preparação do Alvo:** Criação do repositório no GitHub com dependências antigas (`app-node/package.json`, `app-python/requirements.txt`, `app-go/go.mod`), Dockerfiles vulneráveis e commits simulados com chaves no histórico Git (`app-node/config.js`, `app-python/config.py`, `app-go/config.go`).
 2. **Preparação das Ferramentas:** Inicialização do stack de monitoramento a partir do arquivo `docker-compose.yml` que provisiona os serviços de banco, MergeStat e Grafana em uma rede local isolada.
 
 ## 7. Execução Passo a Passo
-Com o Docker rodando em sua máquina, siga a sequência lógica de execução:
-1. Acesse o **MergeStat** em `http://localhost:3300`.
+Com o Docker rodando em sua máquina (ou VM), siga a sequência lógica de execução:
+1. Acesse o **MergeStat** em `http://localhost:3300` (ou `http://<IP_DA_VM>:3300` se estiver acessando a VM sem redirecionamento de portas).
 2. Vá até a aba **Repos** e insira a URL pública do seu repositório de testes do GitHub.
 3. Navegue até a seção **Repo Syncs** e clique em **Add Sync**.
 4. Configure as três ferramentas de scanning (`OSV`, `Grype` e `Gitleaks`) apontando para o seu repositório.
-5. Após a conclusão bem-sucedida dos sincronismos (Syncs), abra o **Grafana** em `http://localhost:3000`.
+5. Após a conclusão bem-sucedida dos sincronismos (Syncs), abra o **Grafana** em `http://localhost:3000` (ou `http://<IP_DA_VM>:3000`).
 6. Adicione o banco de dados PostgreSQL do laboratório como *Data Source* e importe o painel para consolidação analítica.
 
 ## 8. Comandos e Procedimentos Utilizados

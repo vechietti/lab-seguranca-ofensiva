@@ -80,18 +80,41 @@ grype lab-go:latest
 
 ## 📊 Ambiente Integrado DevSecOps (MergeStat + PostgreSQL + Grafana)
 
-Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui o arquivo [docker-compose.yml](docker-compose.yml) pronto que inicializa o stack completo de coleta e visualização:
+Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui o arquivo [docker-compose.yml](docker-compose.yml) pronto que inicializa o stack completo de coleta e visualização.
 
-1. **Subir o stack:**
-   ```bash
-   docker-compose up -d
-   ```
-2. **Configurar no MergeStat (`http://localhost:3300`):**
-   * Vá em **Repos** e registre o link deste repositório Git.
-   * Vá em **Repo Syncs** -> **Add Sync** e ative as imagens de sincronização oficiais do `OSV-Scanner`, `Grype` e `Gitleaks`. Elas varrerão todas as três subpastas automaticamente!
-3. **Análise no Grafana (`http://localhost:3000`):**
-   * Usuário/Senha: `admin` / `admin`.
-   * Conecte o PostgreSQL do MergeStat como Data Source para montar os dashboards analíticos de vulnerabilidades consolidados de Node, Python e Go.
+### 1. Subir o stack (dentro da VM Ubuntu):
+No terminal da sua máquina virtual Ubuntu, clone o repositório, navegue até a pasta e execute:
+```bash
+docker-compose up -d
+```
+
+> [!IMPORTANT]
+> **Acesso a partir da máquina física (Hospedeira):**
+> Se você estiver rodando o Docker dentro de uma VM no VirtualBox, os painéis não estarão diretamente acessíveis em `localhost` no navegador do seu sistema operacional principal. Para acessar, escolha uma das duas formas:
+> 
+> * **Método A: Redirecionamento de Portas no VirtualBox (Recomendado):**
+>   1. Com a VM rodando, vá em **Configurações da VM** -> **Rede** -> **Adaptador 1** -> **Avançado** -> **Redirecionamento de Portas**.
+>   2. Adicione as seguintes regras (deixe o campo IP em branco):
+>      * Regra 1: Nome: `mergestat`, Protocolo: `TCP`, Porta Hospedeira: `3300`, Porta Convidada: `3300`
+>      * Regra 2: Nome: `grafana`, Protocolo: `TCP`, Porta Hospedeira: `3000`, Porta Convidada: `3000`
+>   3. Agora você poderá acessar diretamente do seu navegador da máquina física em:
+>      * **MergeStat:** [http://localhost:3300](http://localhost:3300)
+>      * **Grafana:** [http://localhost:3000](http://localhost:3000)
+> 
+> * **Método B: Acesso Direto via IP da VM (Rede em modo Bridge ou Host-Only):**
+>   1. No terminal da VM Ubuntu, descubra o IP executando: `hostname -I` (ex: `192.168.56.101`).
+>   2. Acesse do navegador da máquina hospedeira usando o IP:
+>      * **MergeStat:** `http://<IP_DA_VM>:3300`
+>      * **Grafana:** `http://<IP_DA_VM>:3000`
+
+### 2. Configurar o MergeStat:
+* Acesse a interface web do **MergeStat** (via localhost ou IP da VM).
+* Vá em **Repos** e registre o link deste repositório Git.
+* Vá em **Repo Syncs** -> **Add Sync** e ative as imagens de sincronização oficiais do `OSV-Scanner`, `Grype` e `Gitleaks`. Elas varrerão todas as três subpastas automaticamente!
+
+### 3. Analisar no Grafana:
+* Acesse a interface web do **Grafana** (usuário: `admin` / senha: `admin`).
+* Conecte o PostgreSQL do MergeStat como Data Source (usando o IP do container ou da rede Docker) para montar os dashboards analíticos de vulnerabilidades consolidados.
 
 ---
 
