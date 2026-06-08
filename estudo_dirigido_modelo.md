@@ -93,7 +93,7 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
    * **Host:** `db:5432`
    * **Database:** `mergestat`
    * **User:** `postgres`
-   * **Password:** `postgres`
+   * **Password:** `password`
    * **SSL Mode:** `disable`
 5. Role a página e clique no botão **Save & Test**. Você deve ver uma mensagem verde confirmando que o banco de dados está conectado.
 6. **Importar o Dashboard do Laboratório:**

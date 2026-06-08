@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: mergestat
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -28,7 +28,7 @@ services:
     ports:
       - "3300:3300"
     environment:
-      - POSTGRES_CONNECTION=postgres://postgres:postgres@db:5432/mergestat?sslmode=disable
+      - POSTGRES_CONNECTION=postgres://postgres:password@db:5432/mergestat?sslmode=disable
       - JWT_SECRET=super-secret-jwt-key-for-academic-lab-2026
     depends_on:
       db:
