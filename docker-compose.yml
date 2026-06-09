@@ -30,9 +30,12 @@ services:
     environment:
       - POSTGRES_CONNECTION=postgres://postgres:password@db:5432/mergestat?sslmode=disable
       - JWT_SECRET=super-secret-jwt-key-for-academic-lab-2026
+    volumes:
+      - .:/repo
     depends_on:
       db:
         condition: service_healthy
+
 
   # 3. Grafana (Plataforma de visualização de painéis/dashboards)
   grafana:

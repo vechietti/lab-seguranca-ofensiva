@@ -120,8 +120,11 @@ chmod +x setup-mergestat.sh
 
 ### 2. Configurar o MergeStat:
 * Acesse a interface web do **MergeStat** (via localhost ou IP da VM).
-* Vá em **Repos** e registre o link deste repositório Git.
+* Vá em **Repos** e clique em **Add Repo**.
+  * **Com internet:** Registre o link público do GitHub (`https://github.com/vechietti/lab-seguranca-ofensiva`).
+  * **Sem internet (100% offline):** Registre o caminho local `/repo` (que está montado no contêiner pelo docker-compose).
 * Vá em **Repo Syncs** -> **Add Sync** e ative as imagens de sincronização oficiais do `OSV-Scanner`, `Grype` e `Gitleaks`. Elas varrerão todas as três subpastas automaticamente!
+
 
 ### 3. Analisar no Grafana:
 * Acesse a interface web do **Grafana** (usuário: `admin` / senha: `admin`).
