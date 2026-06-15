@@ -104,7 +104,7 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
 3. No menu lateral, acesse **Connections** -> **Data Sources** -> **Add Data Source** e selecione o **PostgreSQL**.
 4. Configure as seguintes credenciais para conectar ao banco do MergeStat (como o Grafana está na mesma rede Docker, usamos o nome do serviço `db` como Host):
    * **Host:** `db:5432`
-   * **Database:** `mergestat`
+   * **Database:** `postgres` (os dados coletados pelo MergeStat ficam nos schemas `mergestat` e `sqlq` dentro deste banco)
    * **User:** `postgres`
    * **Password:** `password`
    * **SSL Mode:** `disable`
@@ -112,7 +112,7 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
 6. **Importar o Dashboard do Laboratório:**
    * Para visualizar o painel do scanner igual ao modelo oficial do blog da Grafana, baixe o arquivo de configuração oficial [neste link (GitHub oficial do MergeStat)](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilities/trivy/grafana/trivy.json) ou acesse a versão do OSV-Scanner no repositório.
    * No menu do Grafana, clique no ícone **Dashboards** -> **New** -> **Import**.
-   * Faça o upload do arquivo `.json` baixado ou cole o conteúdo do JSON, selecione o Data Source do PostgreSQL (`mergestat`) que você acabou de conectar e clique em **Import**.
+   * Faça o upload do arquivo `.json` baixado ou cole o conteúdo do JSON, selecione o Data Source do PostgreSQL (`postgres`) que você acabou de conectar e clique em **Import**.
    * Você verá o dashboard completo renderizado com gráficos de pizza por severidade e tabelas alimentadas pelos dados coletados de Node, Python e Go!
 
 ---

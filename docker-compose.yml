@@ -1,7 +1,7 @@
-version: '3.8'
-
 services:
-  # 1. Banco de Dados PostgreSQL (Armazena os dados unificados do MergeStat)
+  # 1. PostgreSQL — base unificada do MergeStat Platform
+  #    Atencao: o DB se chama `postgres` (nao `mergestat`); os schemas
+  #    mergestat/sqlq/public sao criados via migrations rodadas pelo worker.
   db:
     image: postgres:14-alpine
     container_name: lab-devsecops-db
@@ -11,33 +11,93 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: mergestat
+      POSTGRES_DB: postgres
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mergestat"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 2. MergeStat UI e Worker (Executa as varreduras de OSV, Grype e Gitleaks e insere no PostgreSQL)
-  mergestat:
-    image: ghcr.io/mergestat/mergestat:latest
-    container_name: lab-devsecops-mergestat
+  # 2. Worker — roda migrations + executa syncs (OSV, Grype, Gitleaks, git history).
+  #    Monta o diretorio do lab em /repo para varrer os apps locais.
+  worker:
+    image: mergestat/worker:2.3.2-beta
+    container_name: lab-devsecops-worker
     restart: always
-    ports:
-      - "3300:3300"
+    privileged: true
+    stop_grace_period: 10m
     environment:
-      - POSTGRES_CONNECTION=postgres://postgres:password@db:5432/mergestat?sslmode=disable
-      - JWT_SECRET=super-secret-jwt-key-for-academic-lab-2026
+      - POSTGRES_CONNECTION=postgres://postgres:password@db:5432/postgres?sslmode=disable
+      - ENCRYPTION_SECRET=super-secret-encryption-key-for-academic-lab-2026
+      - CONCURRENCY=5
+      - LOG_LEVEL=info
+      - PRETTY_LOGS=1
     volumes:
       - .:/repo
     depends_on:
       db:
         condition: service_healthy
 
+  # 3. GraphQL (Postgraphile) — API consumida pelo console.
+  #    Configurado via argumentos de linha de comando, nao via env.
+  graphql:
+    image: mergestat/graphql:2.3.2-beta
+    container_name: lab-devsecops-graphql
+    restart: always
+    ports:
+      - "5433:5433"
+    environment:
+      - ENCRYPTION_SECRET=super-secret-encryption-key-for-academic-lab-2026
+      - DISPLAY_PG_HOSTNAME=localhost
+      - DISPLAY_PG_PORT=5432
+      - DISPLAY_PG_DATABASE=postgres
+      - DISPLAY_PG_USER=postgres
+    command:
+      - --connection
+      - postgres://postgres:password@db:5432/postgres?sslmode=disable
+      - --port
+      - "5433"
+      - --schema
+      - mergestat,sqlq,public
+      - --append-plugins
+      - "@graphile-contrib/pg-simplify-inflector,postgraphile-plugin-connection-filter,/graphql/container-sync-jobs/index.js,/graphql/exec-sql/index.js,/graphql/service-credentials/index.js"
+      - -o
+      - --subscriptions
+      - --retry-on-init-fail
+      - --dynamic-json
+      - --no-setof-functions-contain-nulls
+      - --no-ignore-rbac
+      - --extended-errors=errcode
+      - --disable-graphiql
+      - --enable-query-batching
+      - --disable-query-log
+      - --legacy-relations=omit
+      - --jwt-secret=super-secret-jwt-key-for-academic-lab-2026
+      - --default-role=mergestat_anonymous
+    depends_on:
+      db:
+        condition: service_healthy
+      worker:
+        condition: service_started
 
-  # 3. Grafana (Plataforma de visualização de painéis/dashboards)
+  # 4. Console — UI web do MergeStat (acesso em http://localhost:3300)
+  console:
+    image: mergestat/console:2.3.2-beta
+    container_name: lab-devsecops-mergestat
+    restart: always
+    ports:
+      - "3300:3000"
+    environment:
+      - POSTGRAPHILE_API=http://graphql:5433/graphql
+      - POSTGRES_CONNECTION=postgres://postgres:password@db:5432/postgres?sslmode=disable
+      - JWT_SECRET=super-secret-jwt-key-for-academic-lab-2026
+      - INSECURE_SESSION_COOKIE=1
+    depends_on:
+      - graphql
+
+  # 5. Grafana — visualizacao dos paineis/dashboards
   grafana:
     image: grafana/grafana-oss:latest
     container_name: lab-devsecops-grafana
