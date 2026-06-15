@@ -120,6 +120,9 @@ chmod +x setup-mergestat.sh
 
 ### 2. Configurar o MergeStat:
 * Acesse a interface web do **MergeStat** (via localhost ou IP da VM).
+* Na tela de login, o MergeStat reutiliza as **credenciais do banco PostgreSQL** definidas no [docker-compose.yml](docker-compose.yml):
+  * **Database user:** `postgres`
+  * **Database password:** `password`
 * Vá em **Repos** e clique em **Add Repo**.
   * **Com internet:** Registre o link público do GitHub (`https://github.com/vechietti/lab-seguranca-ofensiva`).
   * **Sem internet (100% offline):** Registre o caminho local `/repo` (que está montado no contêiner pelo docker-compose).

@@ -86,17 +86,19 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
 
 ### Passo 5: Configurar e Rodar os Scanners no MergeStat
 1. No navegador do seu computador físico, acesse: [http://localhost:3300](http://localhost:3300) (MergeStat).
-2. Vá na aba **Repos** e clique em **Add Repo**.
-3. Escolha uma das duas formas de importação:
+2. Na tela de login, o MergeStat reaproveita as **credenciais do banco PostgreSQL** definidas no `docker-compose.yml`. Informe:
+   * **Database user:** `postgres`
+   * **Database password:** `password`
+3. Vá na aba **Repos** e clique em **Add Repo**.
+4. Escolha uma das duas formas de importação:
    * **Opção Online (Com Internet):** Cole a URL pública no campo: `https://github.com/vechietti/lab-seguranca-ofensiva`
    * **Opção Offline (Sem Internet - Local):** Como a pasta do projeto está mapeada diretamente no contêiner pelo Docker Compose, você pode simplesmente digitar o caminho interno no campo correspondente: `/repo`
-4. Após o repositório ser adicionado, clique nele e navegue até a aba **Repo Syncs**.
-
-5. Clique em **Add Sync** e configure os 3 sincronizadores abaixo:
+5. Após o repositório ser adicionado, clique nele e navegue até a aba **Repo Syncs**.
+6. Clique em **Add Sync** e configure os 3 sincronizadores abaixo:
    * **SCA (OSV-Scanner):** Selecione o scanner correspondente. Ele detectará recursivamente as dependências vulneráveis do Node (`app-node`), Python (`app-python`) e Go (`app-go`).
    * **Containers (Grype):** Adicione a varredura do filesystem dos Dockerfiles para detectar pacotes de SO obsoletos.
    * **Segredos (Gitleaks):** Adicione o sync do Gitleaks. Ele lerá a história do Git em busca das credenciais.
-6. Acompanhe a execução e aguarde até que o status de todos os syncs mude de *Pending/Running* para **Success** (ícone verde).
+7. Acompanhe a execução e aguarde até que o status de todos os syncs mude de *Pending/Running* para **Success** (ícone verde).
 
 ### Passo 6: Conectar o PostgreSQL no Grafana
 1. No navegador do seu computador físico, acesse: [http://localhost:3000](http://localhost:3000) (Grafana).
