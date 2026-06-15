@@ -118,20 +118,34 @@ chmod +x setup-mergestat.sh
 >      * **MergeStat:** `http://<IP_DA_VM>:3300`
 >      * **Grafana:** `http://<IP_DA_VM>:3000`
 
-### 2. Configurar o MergeStat:
-* Acesse a interface web do **MergeStat** (via localhost ou IP da VM).
-* Na tela de login, o MergeStat reutiliza as **credenciais do banco PostgreSQL** definidas no [docker-compose.yml](docker-compose.yml):
-  * **Database user:** `postgres`
-  * **Database password:** `password`
-* Vá em **Repos** e clique em **Add Repo**.
-  * **Com internet:** Registre o link público do GitHub (`https://github.com/vechietti/lab-seguranca-ofensiva`).
-  * **Sem internet (100% offline):** Registre o caminho local `/repo` (que está montado no contêiner pelo docker-compose).
-* Vá em **Repo Syncs** -> **Add Sync** e ative as imagens de sincronização oficiais do `OSV-Scanner`, `Grype` e `Gitleaks`. Elas varrerão todas as três subpastas automaticamente!
+### Passo a passo — Configurar o MergeStat
 
+1. **Abrir o console:** acesse [http://localhost:3300](http://localhost:3300) (via `localhost` da máquina física ou IP da VM, conforme o método de rede escolhido acima).
+2. **Login:** o MergeStat reutiliza as credenciais do banco PostgreSQL definidas no [docker-compose.yml](docker-compose.yml):
+   * **Database user:** `postgres`
+   * **Database password:** `password`
+3. **Adicionar o repositório:** no menu lateral, vá em **Repos** → **Add Repo**. Escolha uma das opções:
+   * **Online (com internet):** cole `https://github.com/vechietti/lab-seguranca-ofensiva` e clique em **Save**.
+   * **Offline (sem internet):** cole `/repo`. Esse caminho é o volume mapeado do repositório no worker via `volumes: - .:/repo` no [docker-compose.yml](docker-compose.yml).
+4. **Configurar os syncs (scans):** clique no nome do repo, vá na aba **Repo Syncs** → **Add Sync** e adicione os três scanners abaixo (um de cada vez):
 
-### 3. Analisar no Grafana:
-* Acesse a interface web do **Grafana** (usuário: `admin` / senha: `admin`).
-* Conecte o PostgreSQL do MergeStat como Data Source (usando o IP do container ou da rede Docker) para montar os dashboards analíticos de vulnerabilidades consolidados.
+   | Sync | Cobre | O que detecta no lab |
+   |---|---|---|
+   | **Scan Gitleaks** | Segredos no histórico Git | Chaves AWS, GitHub PAT, Slack webhook, strings de conexão Postgres/Mongo |
+   | **Scan Grype** | Vulnerabilidades das imagens Docker | CVEs de SO em `node:10.16.0-alpine`, `python:3.6-slim`, `golang:1.15-alpine` |
+   | **Scan Trivy** | SCA de dependências (Node, Python, Go) | CVEs em `package.json`, `requirements.txt`, `go.mod` |
+
+   > **Nota sobre o OSV-Scanner:** a versão `2.3.2-beta` do MergeStat usada neste lab **não traz o sync de OSV-Scanner pré-cadastrado** no console. Para a análise SCA dentro do MergeStat, use o **Scan Trivy** (mesma finalidade). O OSV-Scanner continua sendo possível via CLI standalone (seção "Como Executar os Scanners de Segurança" acima).
+
+5. **Executar os scans:** em cada linha de sync, clique em **Sync Now** (ou **Run**). Acompanhe a coluna **Status** até virar **Success** (ícone verde). A primeira execução do Grype/Trivy demora alguns minutos para baixar o banco de CVEs.
+
+### Analisar no Grafana
+
+* Acesse a interface web do **Grafana** em [http://localhost:3000](http://localhost:3000) (usuário: `admin` / senha: `admin` — ou direto como Admin anônimo conforme configurado no compose).
+* Conecte o PostgreSQL do MergeStat como Data Source apontando para o host `db:5432`, database `postgres`, user `postgres`, password `password`, SSL Mode `disable`.
+* Importe o dashboard oficial do MergeStat para Trivy:
+  [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json)
+  (atenção: a pasta no repo oficial está grafada `vulnerabilties`, sem o "i").
 
 ---
 

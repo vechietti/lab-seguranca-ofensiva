@@ -2,6 +2,8 @@
 
 Este documento é o roteiro completo passo a passo que você (colega validador) deve seguir para configurar, testar e avaliar a segurança estática da aplicação multilíngue do laboratório utilizando **OSV-Scanner, Grype, Gitleaks, MergeStat e Grafana**.
 
+> **Como os scanners aparecem no lab:** OSV-Scanner roda **via CLI standalone** (não há sync pré-cadastrado para ele na versão `2.3.2-beta` do MergeStat usada aqui). Dentro do console do MergeStat, a análise SCA é feita pelo **Scan Trivy**, e as varreduras de containers e segredos pelos syncs **Scan Grype** e **Scan Gitleaks**.
+
 ---
 
 ## 1. Objetivo
@@ -85,20 +87,28 @@ Para acessar os painéis do MergeStat e do Grafana diretamente do navegador do s
 Agora você fará a configuração e as varreduras de segurança a partir da sua máquina física:
 
 ### Passo 5: Configurar e Rodar os Scanners no MergeStat
+
 1. No navegador do seu computador físico, acesse: [http://localhost:3300](http://localhost:3300) (MergeStat).
 2. Na tela de login, o MergeStat reaproveita as **credenciais do banco PostgreSQL** definidas no `docker-compose.yml`. Informe:
    * **Database user:** `postgres`
    * **Database password:** `password`
-3. Vá na aba **Repos** e clique em **Add Repo**.
-4. Escolha uma das duas formas de importação:
-   * **Opção Online (Com Internet):** Cole a URL pública no campo: `https://github.com/vechietti/lab-seguranca-ofensiva`
-   * **Opção Offline (Sem Internet - Local):** Como a pasta do projeto está mapeada diretamente no contêiner pelo Docker Compose, você pode simplesmente digitar o caminho interno no campo correspondente: `/repo`
-5. Após o repositório ser adicionado, clique nele e navegue até a aba **Repo Syncs**.
-6. Clique em **Add Sync** e configure os 3 sincronizadores abaixo:
-   * **SCA (OSV-Scanner):** Selecione o scanner correspondente. Ele detectará recursivamente as dependências vulneráveis do Node (`app-node`), Python (`app-python`) e Go (`app-go`).
-   * **Containers (Grype):** Adicione a varredura do filesystem dos Dockerfiles para detectar pacotes de SO obsoletos.
-   * **Segredos (Gitleaks):** Adicione o sync do Gitleaks. Ele lerá a história do Git em busca das credenciais.
-7. Acompanhe a execução e aguarde até que o status de todos os syncs mude de *Pending/Running* para **Success** (ícone verde).
+3. No menu lateral, clique em **Repos** → botão **Add Repo** (canto superior direito).
+4. Escolha uma das duas formas de importação e clique em **Save**:
+   * **Opção Online (com internet):** cole a URL pública no campo: `https://github.com/vechietti/lab-seguranca-ofensiva`
+   * **Opção Offline (sem internet - local):** como a pasta do projeto está mapeada diretamente no contêiner pelo Docker Compose, digite o caminho interno: `/repo`
+5. Clique no repositório recém-adicionado e navegue até a aba **Repo Syncs**.
+6. Clique em **Add Sync** e adicione, **um por vez**, os três scanners abaixo (todos vêm pré-cadastrados na versão `2.3.2-beta` do console):
+
+   | Sync no MergeStat | Cobertura no lab |
+   |---|---|
+   | **Scan Gitleaks** | Varre o histórico Git em busca de chaves AWS, GitHub PAT, Slack webhook e strings de conexão Postgres/Mongo. |
+   | **Scan Grype** | Detecta CVEs de SO nas imagens Docker `node:10.16.0-alpine`, `python:3.6-slim` e `golang:1.15-alpine`. |
+   | **Scan Trivy** | Faz a análise SCA das dependências dos três módulos (`package.json`, `requirements.txt`, `go.mod`). |
+
+   > **Sobre o OSV-Scanner:** o sync de OSV-Scanner **não vem pré-cadastrado** no console do MergeStat `2.3.2-beta` — por isso usamos o **Scan Trivy** para o papel de SCA dentro do console. O OSV-Scanner pode ser rodado em paralelo via CLI standalone (ver seção "Como Executar os Scanners de Segurança" do `README.md`) se você quiser comparar resultados.
+
+7. Em cada linha de sync, clique em **Sync Now** (ou **Run**) à direita para disparar a execução. A primeira execução do Grype/Trivy demora alguns minutos enquanto baixa o banco de CVEs.
+8. Acompanhe a coluna **Status** até que todos os três syncs mudem de *Pending/Running* para **Success** (ícone verde).
 
 ### Passo 6: Conectar o PostgreSQL no Grafana
 1. No navegador do seu computador físico, acesse: [http://localhost:3000](http://localhost:3000) (Grafana).
@@ -112,10 +122,14 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
    * **SSL Mode:** `disable`
 5. Role a página e clique no botão **Save & Test**. Você deve ver uma mensagem verde confirmando que o banco de dados está conectado.
 6. **Importar o Dashboard do Laboratório:**
-   * Para visualizar o painel do scanner igual ao modelo oficial do blog da Grafana, baixe o arquivo de configuração oficial [neste link (GitHub oficial do MergeStat)](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilities/trivy/grafana/trivy.json) ou acesse a versão do OSV-Scanner no repositório.
-   * No menu do Grafana, clique no ícone **Dashboards** -> **New** -> **Import**.
-   * Faça o upload do arquivo `.json` baixado ou cole o conteúdo do JSON, selecione o Data Source do PostgreSQL (`postgres`) que você acabou de conectar e clique em **Import**.
-   * Você verá o dashboard completo renderizado com gráficos de pizza por severidade e tabelas alimentadas pelos dados coletados de Node, Python e Go!
+   * Como configuramos o **Scan Trivy** no MergeStat (Passo 5), use o dashboard oficial do Trivy. Baixe o JSON aqui:
+     [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json)
+     > Atenção: a pasta no repo oficial está grafada `vulnerabilties` (sem o "i") — não tente substituir por "vulnerabilities" porque dá 404.
+   * Se quiser comparar com a visão do OSV-Scanner (caso tenha rodado também via CLI), o dashboard correspondente está em:
+     [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json)
+   * No menu do Grafana, clique no ícone **Dashboards** → **New** → **Import**.
+   * Faça o upload do arquivo `.json` baixado (ou cole o conteúdo no campo de texto), selecione o Data Source do PostgreSQL que você conectou na etapa anterior e clique em **Import**.
+   * Você verá o dashboard completo renderizado com gráficos por severidade e tabelas alimentadas pelos dados coletados de Node, Python e Go.
 
 ---
 
