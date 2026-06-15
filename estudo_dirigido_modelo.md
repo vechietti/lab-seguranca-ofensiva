@@ -51,20 +51,10 @@ cd lab-seguranca-ofensiva
 ```
 
 ### Passo 3: Inicializar a Infraestrutura
-Você pode escolher uma das duas formas de inicialização:
-
-* **Opção A: Implantação Completa e Unificada (Recomendado):**
-  Na pasta raiz do repositório clonado, suba os serviços do banco Postgres, MergeStat e Grafana já interligados na mesma rede Docker:
-  ```bash
-  docker-compose up -d
-  ```
-
-* **Opção B: Implantação Oficial do MergeStat via Script:**
-  Dê permissão de execução e rode o script `setup-mergestat.sh` para clonar o repositório oficial e subir o docker-compose original de lá de forma isolada:
-  ```bash
-  chmod +x setup-mergestat.sh
-  ./setup-mergestat.sh
-  ```
+Na pasta raiz do repositório clonado, suba os serviços do banco Postgres, MergeStat e Grafana já interligados na mesma rede Docker:
+```bash
+docker-compose up -d
+```
 
 *Verifique se todos os contêineres estão rodando corretamente:*
 ```bash
@@ -93,9 +83,10 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
    * **Database user:** `postgres`
    * **Database password:** `password`
 3. No menu lateral, clique em **Repos** → botão **Add Repo** (canto superior direito).
-4. Escolha uma das duas formas de importação e clique em **Save**:
-   * **Opção Online (com internet):** cole a URL pública no campo: `https://github.com/vechietti/lab-seguranca-ofensiva`
-   * **Opção Offline (sem internet - local):** como a pasta do projeto está mapeada diretamente no contêiner pelo Docker Compose, digite o caminho interno: `/repo`
+4. Cole a URL pública do repositório no campo correspondente e clique em **Save**:
+   ```
+   https://github.com/vechietti/lab-seguranca-ofensiva
+   ```
 5. Clique no repositório recém-adicionado e navegue até a aba **Repo Syncs**.
 6. Clique em **Add Sync** e adicione, **um por vez**, os três scanners abaixo (todos vêm pré-cadastrados na versão `2.3.2-beta` do console):
 
@@ -110,26 +101,17 @@ Agora você fará a configuração e as varreduras de segurança a partir da sua
 7. Em cada linha de sync, clique em **Sync Now** (ou **Run**) à direita para disparar a execução. A primeira execução do Grype/Trivy demora alguns minutos enquanto baixa o banco de CVEs.
 8. Acompanhe a coluna **Status** até que todos os três syncs mudem de *Pending/Running* para **Success** (ícone verde).
 
-### Passo 6: Conectar o PostgreSQL no Grafana
-1. No navegador do seu computador físico, acesse: [http://localhost:3000](http://localhost:3000) (Grafana).
-2. Entre com o usuário `admin` e a senha `admin` (se pedir para alterar a senha, você pode clicar em *Skip*).
-3. No menu lateral, acesse **Connections** -> **Data Sources** -> **Add Data Source** e selecione o **PostgreSQL**.
-4. Configure as seguintes credenciais para conectar ao banco do MergeStat (como o Grafana está na mesma rede Docker, usamos o nome do serviço `db` como Host):
-   * **Host:** `db:5432`
-   * **Database:** `postgres` (os dados coletados pelo MergeStat ficam nos schemas `mergestat` e `sqlq` dentro deste banco)
-   * **User:** `postgres`
-   * **Password:** `password`
-   * **SSL Mode:** `disable`
-5. Role a página e clique no botão **Save & Test**. Você deve ver uma mensagem verde confirmando que o banco de dados está conectado.
-6. **Importar o Dashboard do Laboratório:**
-   * Como configuramos o **Scan Trivy** no MergeStat (Passo 5), use o dashboard oficial do Trivy. Baixe o JSON aqui:
-     [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json)
-     > Atenção: a pasta no repo oficial está grafada `vulnerabilties` (sem o "i") — não tente substituir por "vulnerabilities" porque dá 404.
-   * Se quiser comparar com a visão do OSV-Scanner (caso tenha rodado também via CLI), o dashboard correspondente está em:
-     [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json)
-   * No menu do Grafana, clique no ícone **Dashboards** → **New** → **Import**.
-   * Faça o upload do arquivo `.json` baixado (ou cole o conteúdo no campo de texto), selecione o Data Source do PostgreSQL que você conectou na etapa anterior e clique em **Import**.
-   * Você verá o dashboard completo renderizado com gráficos por severidade e tabelas alimentadas pelos dados coletados de Node, Python e Go.
+### Passo 6: Acessar o Dashboard do Grafana (já provisionado)
+
+O Grafana deste laboratório já vem **pré-configurado** via provisioning:
+* **Data Source** PostgreSQL apontando para o banco do MergeStat (definida em [grafana/provisioning/datasources/datasource.yml](grafana/provisioning/datasources/datasource.yml)).
+* **Dashboard do Trivy** já importado a partir de [grafana/dashboards/trivy.json](grafana/dashboards/trivy.json) (baseado no JSON oficial do MergeStat).
+
+1. No navegador do seu computador físico, acesse: [http://localhost:3000](http://localhost:3000) (Grafana). Você entra direto como Admin anônimo — sem precisar de login.
+2. No menu lateral, clique em **Dashboards** e abra o dashboard **Trivy** (ou acesse direto em [http://localhost:3000/d/PyNLihsdf/trivy](http://localhost:3000/d/PyNLihsdf/trivy)).
+3. Após os syncs do MergeStat finalizarem com sucesso (Passo 5), o painel será populado automaticamente com os CVEs detectados nos três módulos (Node, Python, Go) — gráficos por severidade, tabelas com pacotes vulneráveis e contadores agregados.
+
+> **Quer comparar com o OSV-Scanner?** O dashboard equivalente para OSV está em [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/osv-scanner/grafana/osv-scanner.json). Você pode importá-lo manualmente via **Dashboards → New → Import** caso tenha rodado o OSV-Scanner via CLI standalone. Atenção: a pasta no repo oficial é `vulnerabilties` (sem o "i") — substituir por "vulnerabilities" dá 404.
 
 ---
 

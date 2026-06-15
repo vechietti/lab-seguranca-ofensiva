@@ -20,8 +20,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Worker — roda migrations + executa syncs (OSV, Grype, Gitleaks, git history).
-  #    Monta o diretorio do lab em /repo para varrer os apps locais.
+  # 2. Worker — roda migrations + executa syncs (Trivy, Grype, Gitleaks, git history)
+  #    consumindo o repositorio remoto do GitHub.
   worker:
     image: mergestat/worker:2.3.2-beta
     container_name: lab-devsecops-worker
@@ -34,8 +34,6 @@ services:
       - CONCURRENCY=5
       - LOG_LEVEL=info
       - PRETTY_LOGS=1
-    volumes:
-      - .:/repo
     depends_on:
       db:
         condition: service_healthy
@@ -98,6 +96,8 @@ services:
       - graphql
 
   # 5. Grafana — visualizacao dos paineis/dashboards
+  #    Datasource Postgres e dashboard do Trivy ja vem provisionados via
+  #    pasta ./grafana/provisioning (carregada no boot pelo Grafana).
   grafana:
     image: grafana/grafana-oss:latest
     container_name: lab-devsecops-grafana
@@ -109,6 +109,10 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards/json
     depends_on:
       db:
         condition: service_healthy

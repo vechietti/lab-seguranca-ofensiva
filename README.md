@@ -7,6 +7,12 @@ Este repositório foi **intencionalmente projetado** para ser vulnerável. Ele s
 
 ---
 
+## ▶️ [**INICIAR O ESTUDO DIRIGIDO**](estudo_dirigido_modelo.md)
+
+# 👉 [Abra o roteiro passo a passo aqui](estudo_dirigido_modelo.md)
+
+---
+
 ## 🛠️ Estrutura e Mapa de Vulnerabilidades do Laboratório
 
 O repositório está organizado em três subdiretórios representando diferentes ecossistemas de desenvolvimento para testar o comportamento das ferramentas em múltiplos ambientes:
@@ -80,23 +86,10 @@ grype lab-go:latest
 
 ## 📊 Ambiente Integrado DevSecOps (MergeStat + PostgreSQL + Grafana)
 
-Para simular um console corporativo de gestão de vulnerabilidades, este repositório possui duas opções de implantação do ambiente:
+Para simular um console corporativo de gestão de vulnerabilidades, suba o stack unificado (**PostgreSQL + MergeStat + Grafana** já interligados na mesma rede Docker). Na pasta raiz do repositório clonado na VM Ubuntu, execute:
 
-### Opção A: Stack Unificado e Completo (Recomendado)
-Esta opção inicializa o **PostgreSQL, o MergeStat e o Grafana** já interligados na mesma rede Docker.
-Na pasta raiz do repositório clonado na VM Ubuntu, execute:
 ```bash
 docker-compose up -d
-```
-
-### Opção B: Implantação Oficial do MergeStat via Script
-Se você deseja clonar e rodar o repositório oficial do MergeStat de forma isolada, utilize o script de automação **`setup-mergestat.sh`** fornecido na raiz deste repositório:
-```bash
-# 1. Dê permissão de execução ao script
-chmod +x setup-mergestat.sh
-
-# 2. Execute o script para clonar o repositório oficial e subir o docker-compose
-./setup-mergestat.sh
 ```
 
 > [!IMPORTANT]
@@ -124,9 +117,7 @@ chmod +x setup-mergestat.sh
 2. **Login:** o MergeStat reutiliza as credenciais do banco PostgreSQL definidas no [docker-compose.yml](docker-compose.yml):
    * **Database user:** `postgres`
    * **Database password:** `password`
-3. **Adicionar o repositório:** no menu lateral, vá em **Repos** → **Add Repo**. Escolha uma das opções:
-   * **Online (com internet):** cole `https://github.com/vechietti/lab-seguranca-ofensiva` e clique em **Save**.
-   * **Offline (sem internet):** cole `/repo`. Esse caminho é o volume mapeado do repositório no worker via `volumes: - .:/repo` no [docker-compose.yml](docker-compose.yml).
+3. **Adicionar o repositório:** no menu lateral, vá em **Repos** → **Add Repo**, cole `https://github.com/vechietti/lab-seguranca-ofensiva` e clique em **Save**.
 4. **Configurar os syncs (scans):** clique no nome do repo, vá na aba **Repo Syncs** → **Add Sync** e adicione os três scanners abaixo (um de cada vez):
 
    | Sync | Cobre | O que detecta no lab |
@@ -141,11 +132,12 @@ chmod +x setup-mergestat.sh
 
 ### Analisar no Grafana
 
-* Acesse a interface web do **Grafana** em [http://localhost:3000](http://localhost:3000) (usuário: `admin` / senha: `admin` — ou direto como Admin anônimo conforme configurado no compose).
-* Conecte o PostgreSQL do MergeStat como Data Source apontando para o host `db:5432`, database `postgres`, user `postgres`, password `password`, SSL Mode `disable`.
-* Importe o dashboard oficial do MergeStat para Trivy:
-  [https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json](https://github.com/mergestat/mergestat/blob/main/examples/git/vulnerabilties/trivy/grafana/trivy.json)
-  (atenção: a pasta no repo oficial está grafada `vulnerabilties`, sem o "i").
+O Grafana já vem **pré-configurado** via provisioning (arquivos em [grafana/](grafana/) montados no container):
+
+* **Data Source:** PostgreSQL apontando para o banco do MergeStat ([grafana/provisioning/datasources/datasource.yml](grafana/provisioning/datasources/datasource.yml)).
+* **Dashboard:** o painel oficial do Trivy já importado ([grafana/dashboards/trivy.json](grafana/dashboards/trivy.json)).
+
+Basta acessar [http://localhost:3000](http://localhost:3000) (acesso direto como Admin anônimo, sem login) e abrir **Dashboards → Trivy** ou ir direto em [http://localhost:3000/d/PyNLihsdf/trivy](http://localhost:3000/d/PyNLihsdf/trivy). O painel é populado automaticamente assim que os syncs do MergeStat finalizarem.
 
 ---
 
